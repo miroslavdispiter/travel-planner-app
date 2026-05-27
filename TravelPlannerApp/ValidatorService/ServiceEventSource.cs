@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Services.Runtime;
 
-namespace FirstService
+namespace ValidatorService
 {
-    [EventSource(Name = "MyCompany-TravelPlannerApp-FirstService")]
+    [EventSource(Name = "MyCompany-TravelPlannerApp-ValidatorService")]
 internal sealed class ServiceEventSource : EventSource
 {
     public static readonly ServiceEventSource Current = new ServiceEventSource();

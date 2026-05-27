@@ -36,7 +36,13 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FirstService\FirstService.csproj" />
+    <ProjectReference Include="..\BackendAPIService\BackendAPIService.csproj">
+      <ServiceLaunchUrl>http://localhost:{ServicePort}/swagger</ServiceLaunchUrl>
+    </ProjectReference>
+    <ProjectReference Include="..\FinanceService\FinanceService.csproj" />
+    <ProjectReference Include="..\TravelService\TravelService.csproj" />
+    <ProjectReference Include="..\UserService\UserService.csproj" />
+    <ProjectReference Include="..\ValidatorService\ValidatorService.csproj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
   <PropertyGroup>

@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 
-namespace FirstService
+namespace ValidatorService
 {
     /// <summary>
     /// An instance of this class is created for each service instance by the Service Fabric runtime.
     /// </summary>
-    internal sealed class FirstService : StatelessService
+    internal sealed class ValidatorService : StatelessService
     {
-        public FirstService(StatelessServiceContext context)
+        public ValidatorService(StatelessServiceContext context)
             : base(context)
         { }
 
