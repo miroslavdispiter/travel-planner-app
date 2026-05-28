@@ -11,11 +11,11 @@ namespace WebAPIService.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UserServiceProxy _userServiceProxy;
+        private readonly UserServiceProxy _proxy;
 
-        public AuthController()
+        public AuthController(UserServiceProxy proxy)
         {
-            _userServiceProxy = new UserServiceProxy();
+            _proxy = proxy;
         }
 
         [HttpPost("register")]
@@ -27,7 +27,8 @@ namespace WebAPIService.Controllers
                 return BadRequest(new { success = false, message = "Validation failed.", errors });
             }
 
-            var result = await _userServiceProxy.Register(request);
+            var service = _proxy.GetUserServiceProxy();
+            var result = await service.Register(request);
 
             if (result.Success)
             {
@@ -48,7 +49,8 @@ namespace WebAPIService.Controllers
                 return BadRequest(new { success = false, message = "Validation failed.", errors });
             }
 
-            var result = await _userServiceProxy.Login(request);
+            var service = _proxy.GetUserServiceProxy();
+            var result = await service.Login(request);
 
             if (result.Success)
             {
@@ -58,28 +60,6 @@ namespace WebAPIService.Controllers
             {
                 return Unauthorized(new { success = false, message = result.Message });
             }
-        }
-
-        // TEST CONTROLLERS
-
-        [HttpGet("public")]
-        public IActionResult Public()
-        {
-            return Ok("Public endpoint");
-        }
-
-        [Authorize]
-        [HttpGet("protected")]
-        public IActionResult Protected()
-        {
-            return Ok("Authenticated user");
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpGet("admin")]
-        public IActionResult AdminOnly()
-        {
-            return Ok("Admin only endpoint");
         }
     }
 }

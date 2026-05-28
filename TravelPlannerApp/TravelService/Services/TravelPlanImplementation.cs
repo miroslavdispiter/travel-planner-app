@@ -8,9 +8,9 @@ namespace TravelService.Services
 {
     public class TravelPlanImplementation : ITravelService
     {
-        private readonly TravelRepository _repo;
+        private readonly ITravelPlanRepository _repo;
 
-        public TravelPlanImplementation(TravelRepository repo)
+        public TravelPlanImplementation(ITravelPlanRepository repo)
         {
             _repo = repo;
         }
@@ -100,7 +100,7 @@ namespace TravelService.Services
             plan.Budget = dto.Budget;
             plan.Notes = dto.Notes;
 
-            await _repo.Update();
+            await _repo.Update(plan);
 
             return ServiceResult<bool>.SuccessResult(true);
         }

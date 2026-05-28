@@ -1,11 +1,9 @@
-﻿using Microsoft.ServiceFabric.Services.Remoting;
-using Shared.Common;
+﻿using Shared.Common;
 using Shared.DTOs.User;
-using System.Threading.Tasks;
 
-namespace Shared.Interfaces
+namespace UserService.Interfaces
 {
-    public interface IUserService : IService
+    public interface IAuthService
     {
         Task<ServiceResult<AuthResponseDto>> Register(RegisterRequestDto request);
         Task<ServiceResult<AuthResponseDto>> Login(LoginRequestDto request);

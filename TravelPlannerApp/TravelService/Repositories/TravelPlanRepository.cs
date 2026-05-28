@@ -9,11 +9,11 @@ using TravelService.Models;
 
 namespace TravelService.Repositories
 {
-    public class TravelRepository
+    public class TravelPlanRepository : ITravelPlanRepository
     {
         private readonly TravelDbContext _context;
 
-        public TravelRepository(TravelDbContext context)
+        public TravelPlanRepository(TravelDbContext context)
         {
             _context = context;
         }
@@ -37,8 +37,9 @@ namespace TravelService.Repositories
             return await _context.TravelPlans.FindAsync(id);
         }
 
-        public async Task Update()
+        public async Task Update(TravelPlan plan)
         {
+            _context.TravelPlans.Update(plan);
             await _context.SaveChangesAsync();
         }
 

@@ -1,19 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
-using Microsoft.Extensions.Configuration;
 using Shared.Common;
 using Shared.DTOs.User;
 using Shared.Interfaces;
-using System.IO;
-using System;
-using System.Collections.Generic;
 using System.Fabric;
-using System.Threading;
-using System.Threading.Tasks;
 using UserService.DbContext;
+using UserService.Interfaces;
 using UserService.Repositories;
 using UserService.Services;
 
@@ -42,8 +38,9 @@ namespace UserService
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddScoped<UserRepository>();
-            services.AddScoped<UserServiceImplementation>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuthService, AuthServiceImplementation>();
+            services.AddScoped<IJwtService, JwtService>();
 
             _serviceProvider = services.BuildServiceProvider();
         }
@@ -52,7 +49,7 @@ namespace UserService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<UserServiceImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<IAuthService>();
                 return await service.Register(request);
             }
         }
@@ -61,7 +58,7 @@ namespace UserService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<UserServiceImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<IAuthService>();
                 return await service.Login(request);
             }
         }
