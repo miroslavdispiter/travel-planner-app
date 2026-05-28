@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
@@ -8,12 +7,7 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using Shared.Common;
 using Shared.DTOs.TravelPlan;
 using Shared.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.Fabric;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using TravelService.DbContext;
 using TravelService.Repositories;
 using TravelService.Services;
@@ -43,8 +37,8 @@ namespace TravelService
             services.AddDbContext<TravelDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddScoped<TravelRepository>();
-            services.AddScoped<TravelPlanImplementation>();
+            services.AddScoped<ITravelPlanRepository, TravelPlanRepository>();
+            services.AddScoped<ITravelService, TravelPlanImplementation>();
 
             _serviceProvider = services.BuildServiceProvider();
         }
@@ -53,7 +47,7 @@ namespace TravelService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<TravelPlanImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<ITravelService>();
                 return await service.Create(userId, dto);
             }
         }
@@ -62,7 +56,7 @@ namespace TravelService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<TravelPlanImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<ITravelService>();
                 return await service.GetAll(userId);
             }
         }
@@ -71,7 +65,7 @@ namespace TravelService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<TravelPlanImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<ITravelService>();
                 return await service.GetById(id);
             }
         }
@@ -80,7 +74,7 @@ namespace TravelService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<TravelPlanImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<ITravelService>();
                 return await service.Update(id, dto);
             }
         }
@@ -89,7 +83,7 @@ namespace TravelService
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var service = scope.ServiceProvider.GetRequiredService<TravelPlanImplementation>();
+                var service = scope.ServiceProvider.GetRequiredService<ITravelService>();
                 return await service.Delete(id);
             }
         }

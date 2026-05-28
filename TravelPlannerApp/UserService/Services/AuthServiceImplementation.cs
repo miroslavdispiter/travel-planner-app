@@ -1,35 +1,20 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Shared.Common;
+﻿using Shared.Common;
 using Shared.DTOs.User;
 using Shared.Enums;
-using Shared.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using UserService.Interfaces;
 using UserService.Models;
-using UserService.Repositories;
 
 namespace UserService.Services
 {
-    public class UserServiceImplementation : IUserService
+    public class AuthServiceImplementation : IAuthService
     {
-        private readonly UserRepository _userRepository;
-        private readonly string _jwtSecret;
-        private readonly string _jwtIssuer;
-        private readonly string _jwtAudience;
-        private readonly int _jwtExpirationMinutes;
+        private readonly IUserRepository _userRepository;
+        private readonly IJwtService _jwtService;
 
-        public UserServiceImplementation(UserRepository userRepository, IConfiguration configuration)
+        public AuthServiceImplementation(IUserRepository userRepository, IJwtService jwtService)
         {
             _userRepository = userRepository;
-
-            var jwtSettings = configuration.GetSection("JwtSettings");
-
-            _jwtSecret = jwtSettings["Secret"];
-            _jwtIssuer = jwtSettings["Issuer"];
-            _jwtAudience = jwtSettings["Audience"];
-            _jwtExpirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"]);
+            _jwtService = jwtService;
         }
 
         public async Task<ServiceResult<AuthResponseDto>> Register(RegisterRequestDto request)
@@ -63,7 +48,7 @@ namespace UserService.Services
 
                 var savedUser = await _userRepository.AddAsync(newUser);
 
-                string token = GenerateJwtToken(savedUser);
+                string token = _jwtService.GenerateToken(savedUser);
 
                 var response = new AuthResponseDto
                 {
@@ -100,7 +85,7 @@ namespace UserService.Services
                     return ServiceResult<AuthResponseDto>.FailureResult("Invalid email or password.");
                 }
 
-                string token = GenerateJwtToken(user);
+                string token = _jwtService.GenerateToken(user);
 
                 var response = new AuthResponseDto
                 {
@@ -119,34 +104,6 @@ namespace UserService.Services
             {
                 return ServiceResult<AuthResponseDto>.FailureResult($"Login failed: {ex.Message}");
             }
-        }
-
-        private string GenerateJwtToken(User user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_jwtSecret);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.Role.ToString())
-                }),
-                IssuedAt = DateTime.UtcNow,
-                Expires = DateTime.UtcNow.AddMinutes(_jwtExpirationMinutes),
-                Issuer = _jwtIssuer,
-                Audience = _jwtAudience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature
-                )
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
         }
     }
 }

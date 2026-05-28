@@ -1,18 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
-using System;
-using System.Collections.Generic;
 using System.Fabric;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Text;
-using System.Threading;
+using WebAPIService.Services;
 
 namespace WebApiService
 {
@@ -38,6 +32,8 @@ namespace WebApiService
                            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
                         builder.Services.AddSingleton<StatelessServiceContext>(serviceContext);
+                        builder.Services.AddScoped<TravelServiceProxy>();
+                        builder.Services.AddScoped<UserServiceProxy>();
 
                         builder.WebHost
                             .UseKestrel()

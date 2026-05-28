@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
+using UserService.Interfaces;
 using UserService.DbContext;
 using UserService.Models;
 
 namespace UserService.Repositories
 {
-    public class UserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly ApplicationDbContext _context;
 

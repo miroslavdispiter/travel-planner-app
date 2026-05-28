@@ -4,6 +4,7 @@ using Shared.DTOs.TravelPlan;
 using WebAPIService.Services;
 using WebAPIService.Validators;
 using System.Security.Claims;
+using Shared.Interfaces;
 
 namespace WebAPIService.Controllers
 {
@@ -12,7 +13,12 @@ namespace WebAPIService.Controllers
     [Authorize]
     public class TravelPlanController : ControllerBase
     {
-        private readonly TravelServiceProxy _proxy = new();
+        private readonly TravelServiceProxy _proxy;
+
+        public TravelPlanController(TravelServiceProxy proxy)
+        {
+            _proxy = proxy;
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create(CreateTravelPlanDto dto)
@@ -38,7 +44,8 @@ namespace WebAPIService.Controllers
 
             int userId = int.Parse(userIdClaim.Value);
 
-            var result = await _proxy.Create(userId, dto);
+            var service = _proxy.GetTravelPlanProxy();
+            var result = await service.Create(userId, dto);
 
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -55,7 +62,8 @@ namespace WebAPIService.Controllers
 
             int userId = int.Parse(userIdClaim.Value);
 
-            var result = await _proxy.GetAll(userId);
+            var service = _proxy.GetTravelPlanProxy();
+            var result = await service.GetAll(userId);
 
             return Ok(result);
         }
@@ -63,7 +71,8 @@ namespace WebAPIService.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            var result = await _proxy.GetById(id);
+            var service = _proxy.GetTravelPlanProxy();
+            var result = await service.GetById(id);
             return result.Success ? Ok(result) : NotFound(result);
         }
 
@@ -82,7 +91,8 @@ namespace WebAPIService.Controllers
                 });
             }
 
-            var result = await _proxy.Update(id, dto);
+            var service = _proxy.GetTravelPlanProxy();
+            var result = await service.Update(id, dto);
 
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -90,7 +100,8 @@ namespace WebAPIService.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _proxy.Delete(id);
+            var service = _proxy.GetTravelPlanProxy();
+            var result = await service.Delete(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
     }
