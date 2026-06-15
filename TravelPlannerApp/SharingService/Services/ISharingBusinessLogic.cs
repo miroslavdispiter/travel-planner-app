@@ -3,9 +3,9 @@ using Shared.DTOs.Sharing;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SharingService.Interfaces
+namespace SharingService.Services
 {
-    public interface ISharingTokenService
+    public interface ISharingBusinessLogic
     {
         Task<ServiceResult<SharingTokenDto>> CreateSharingToken(int userId, CreateSharingTokenDto dto);
         Task<ServiceResult<SharingTokenDto>> GetSharingToken(string token);

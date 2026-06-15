@@ -1,19 +1,20 @@
-﻿using Shared.Common;
+﻿using SharingService.Models;
+using SharingService.Repositories;
+using Shared.Common;
 using Shared.DTOs.Sharing;
-using SharingService.Interfaces;
-using SharingService.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace SharingService.Services
 {
-    public class SharingTokenImplementation : ISharingTokenService
+    public class SharingBusinessLogic : ISharingBusinessLogic
     {
         private readonly ISharingTokenRepository _repository;
 
-        public SharingTokenImplementation(ISharingTokenRepository repository)
+        public SharingBusinessLogic(ISharingTokenRepository repository)
         {
             _repository = repository;
         }
@@ -22,33 +23,22 @@ namespace SharingService.Services
         {
             try
             {
-                // Validacija
-                if (dto.AccessType != "VIEW" && dto.AccessType != "EDIT")
-                {
-                    return ServiceResult<SharingTokenDto>.FailureResult("Access type must be VIEW or EDIT.");
-                }
+                var tokenString = GenerateUniqueToken();
 
-                // Generiši unique token
-                string token = Guid.NewGuid().ToString("N");
-
-                DateTime? expiresAt = null;
-                if (dto.ExpiresInDays.HasValue && dto.ExpiresInDays.Value > 0)
+                var token = new SharingToken
                 {
-                    expiresAt = DateTime.UtcNow.AddDays(dto.ExpiresInDays.Value);
-                }
-
-                var tokenData = new SharingTokenData
-                {
-                    Token = token,
+                    Token = tokenString,
                     TravelPlanId = dto.TravelPlanId,
                     OwnerId = userId,
                     AccessType = dto.AccessType,
                     CreatedAt = DateTime.UtcNow,
-                    ExpiresAt = expiresAt
+                    ExpiresAt = dto.ExpiresInDays.HasValue
+                        ? DateTime.UtcNow.AddDays(dto.ExpiresInDays.Value)
+                        : (DateTime?)null,
+                    IsRevoked = false
                 };
 
-                var created = await _repository.CreateAsync(tokenData);
-
+                var created = await _repository.CreateAsync(token);
                 var tokenDto = MapToDto(created);
 
                 return ServiceResult<SharingTokenDto>.SuccessResult(tokenDto, "Sharing token created successfully.");
@@ -63,14 +53,14 @@ namespace SharingService.Services
         {
             try
             {
-                var tokenData = await _repository.GetByTokenAsync(token);
+                var sharingToken = await _repository.GetByTokenAsync(token);
 
-                if (tokenData == null)
+                if (sharingToken == null)
                 {
                     return ServiceResult<SharingTokenDto>.FailureResult("Sharing token not found.");
                 }
 
-                var tokenDto = MapToDto(tokenData);
+                var tokenDto = MapToDto(sharingToken);
 
                 return ServiceResult<SharingTokenDto>.SuccessResult(tokenDto, "Sharing token retrieved successfully.");
             }
@@ -85,8 +75,7 @@ namespace SharingService.Services
             try
             {
                 var tokens = await _repository.GetByOwnerIdAsync(userId);
-
-                var tokenDtos = tokens.Select(t => MapToDto(t)).ToList();
+                var tokenDtos = tokens.Select(MapToDto).ToList();
 
                 return ServiceResult<List<SharingTokenDto>>.SuccessResult(tokenDtos, "Sharing tokens retrieved successfully.");
             }
@@ -100,15 +89,14 @@ namespace SharingService.Services
         {
             try
             {
-                var tokenData = await _repository.GetByTokenAsync(token);
+                var sharingToken = await _repository.GetByTokenAsync(token);
 
-                if (tokenData == null)
+                if (sharingToken == null)
                 {
                     return ServiceResult<bool>.FailureResult("Sharing token not found.");
                 }
 
-                // Proveri da li je korisnik vlasnik tokena
-                if (tokenData.OwnerId != userId)
+                if (sharingToken.OwnerId != userId)
                 {
                     return ServiceResult<bool>.FailureResult("You are not authorized to revoke this token.");
                 }
@@ -129,46 +117,63 @@ namespace SharingService.Services
         {
             try
             {
-                var tokenData = await _repository.GetByTokenAsync(dto.Token);
+                var sharingToken = await _repository.GetByTokenAsync(dto.Token);
 
-                if (tokenData == null)
+                if (sharingToken == null)
                 {
                     return ServiceResult<bool>.FailureResult("Invalid sharing token.");
                 }
 
-                // Proveri da li token pripada traženom travel planu
-                if (tokenData.TravelPlanId != dto.TravelPlanId)
+                if (sharingToken.IsRevoked)
+                {
+                    return ServiceResult<bool>.FailureResult("This sharing token has been revoked.");
+                }
+
+                if (sharingToken.ExpiresAt.HasValue && sharingToken.ExpiresAt.Value < DateTime.UtcNow)
+                {
+                    return ServiceResult<bool>.FailureResult("This sharing token has expired.");
+                }
+
+                if (sharingToken.TravelPlanId != dto.TravelPlanId)
                 {
                     return ServiceResult<bool>.FailureResult("Token does not match the travel plan.");
                 }
 
-                // Proveri da li je token istekao
-                if (tokenData.ExpiresAt.HasValue && tokenData.ExpiresAt.Value < DateTime.UtcNow)
-                {
-                    return ServiceResult<bool>.FailureResult("Sharing token has expired.");
-                }
-
-                return ServiceResult<bool>.SuccessResult(true, "Sharing token is valid.");
+                return ServiceResult<bool>.SuccessResult(true, "Token is valid.");
             }
             catch (Exception ex)
             {
-                return ServiceResult<bool>.FailureResult($"Failed to validate sharing token: {ex.Message}");
+                return ServiceResult<bool>.FailureResult($"Token validation failed: {ex.Message}");
             }
         }
 
-        private SharingTokenDto MapToDto(SharingTokenData tokenData)
+        private SharingTokenDto MapToDto(SharingToken token)
         {
-            bool isExpired = tokenData.ExpiresAt.HasValue && tokenData.ExpiresAt.Value < DateTime.UtcNow;
+            bool isExpired = token.IsRevoked ||
+                             (token.ExpiresAt.HasValue && token.ExpiresAt.Value < DateTime.UtcNow);
 
             return new SharingTokenDto
             {
-                Token = tokenData.Token,
-                TravelPlanId = tokenData.TravelPlanId,
-                AccessType = tokenData.AccessType,
-                CreatedAt = tokenData.CreatedAt,
-                ExpiresAt = tokenData.ExpiresAt,
+                Token = token.Token,
+                TravelPlanId = token.TravelPlanId,
+                AccessType = token.AccessType,
+                CreatedAt = token.CreatedAt,
+                ExpiresAt = token.ExpiresAt,
                 IsExpired = isExpired
             };
+        }
+
+        private string GenerateUniqueToken()
+        {
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                var tokenBytes = new byte[32];
+                rng.GetBytes(tokenBytes);
+                return Convert.ToBase64String(tokenBytes)
+                    .Replace("+", "-")
+                    .Replace("/", "_")
+                    .Replace("=", "");
+            }
         }
     }
 }
