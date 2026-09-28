@@ -1,24 +1,26 @@
+# Visual Studio / .NET
 .vs/
 bin/
 obj/
 packages/
+*.user
+*.suo
 
-######################################
+# Service Fabric build output
+pkg/
+
+# Node / frontend
+node_modules/
+dist/
+
 # ENV FILES
-######################################
 
-# Ignore all .env files
 .env
 .env.*
 !.env.example
 
-######################################
 # APP SETTINGS (sensitive config)
-######################################
 
-# Ignore all appsettings files
 appsettings.json
 appsettings.*.json
-
-# Allow example config files
 !appsettings.example.json
